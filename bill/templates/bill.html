@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Billing Application</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                    <a class="nav-link" href="{% url 'bill_list' %}">Generated Bills</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'my_company' %}">My Company</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'add_customer' %}">Add Customer</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Billing Form -->
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Billing Form</h2>
+
+        <form id="billingForm" method="post">
+            {% csrf_token %}
+
+            <!-- Customer Dropdown -->
+            <div class="mb-3">
+                <label for="customer" class="form-label">To</label>
+                <select class="form-select" id="customer" name="customer" required onchange="setCustomerName()">
+                    <option value="" selected disabled>Select Customer</option>
+                    {% for customer in customers %}
+                        <option value="{{ customer.id }}" data-name="{{ customer.name }}">{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="customer_name" name="customer_name" required>
+            </div>
+
+            <!-- Bill Details -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="batch_number" class="form-label">Batch/Royalty Number</label>
+                    <input type="text" class="form-control" id="batch_number" name="batch_number" value="0">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="date_of_purchase" class="form-label">Date of Purchase</label>
+                    <input type="date" class="form-control" id="date_of_purchase" name="date_of_purchase" value="{{ today|date:'Y-m-d' }}" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="date_of_bill" class="form-label">Date of Bill</label>
+                    <input type="date" class="form-control" id="date_of_bill" name="date_of_bill" value="{{ today|date:'Y-m-d' }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="description" name="description" value="Sand" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="price_per_unit" class="form-label">Price per Unit</label>
+                    <input type="number" step="0.01" class="form-control" id="price_per_unit" name="price_per_unit" value="0.00" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="units_purchased" class="form-label">Units Purchased</label>
+                    <input type="number" class="form-control" id="units_purchased" name="units_purchased" value="1" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="gst" class="form-label">GST (%)</label>
+                    <input type="number" step="0.01" class="form-control" id="gst" name="gst" value="5" required>
+                </div>
+            </div>
+
+            <!-- Add Product Button -->
+            <button type="button" class="btn btn-secondary mb-4" onclick="addProduct()">Add Product</button>
+
+            <!-- Added Products Table -->
+            <table class="table table-bordered" id="addedProductsTable">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Batch/Royalty Number</th>
+                        <th>Date of Purchase</th>
+                        <th>Price per Unit</th>
+                        <th>Units Purchased</th>
+                        <th>GST (%)</th>
+                        <th>Total (Including GST)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productList">
+                    <tr>
+                        <td colspan="8" class="text-center">No products added yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Total Amount Display -->
+            <div class="mb-3">
+                <label class="form-label">Total Amount (Including GST)</label>
+                <p id="total_amount">0.00</p>
+            </div>
+
+            <!-- Generate Bill Button -->
+            <button type="submit" class="btn btn-primary w-100 mt-3">Generate Bill</button>
+        </form>
+    </div>
+
+    <!-- JavaScript to Handle Dynamic Product List and Form Submission -->
+    <script>
+        const products = [];
+
+        function setCustomerName() {
+            const customerSelect = document.getElementById("customer");
+            const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+            const customerName = selectedOption.getAttribute('data-name');
+            document.getElementById("customer_name").value = customerName; // Set the hidden input field
+        }
+
+        function addProduct() {
+            const description = document.getElementById("description").value.trim();
+            const batchNumber = document.getElementById("batch_number").value.trim();
+            const dateOfPurchase = document.getElementById("date_of_purchase").value;
+            const pricePerUnit = parseFloat(document.getElementById("price_per_unit").value);
+            const unitsPurchased = parseInt(document.getElementById("units_purchased").value);
+            const gst = parseFloat(document.getElementById("gst").value);
+
+            // Validate inputs
+            if (!description || !batchNumber || !dateOfPurchase || isNaN(pricePerUnit) || isNaN(unitsPurchased) || isNaN(gst)) {
+                alert("Please fill all fields correctly.");
+                return;
+            }
+
+            const totalIncludingGST = (pricePerUnit * unitsPurchased) * (1 + gst / 100);
+            const product = { description, batchNumber, dateOfPurchase, pricePerUnit, unitsPurchased, gst, totalIncludingGST };
+            products.push(product);
+
+            updateProductTable();
+            clearProductFields();
+            updateTotalAmount(); // Update the total amount display
+        }
+
+        function updateProductTable() {
+            const productList = document.getElementById("productList");
+            productList.innerHTML = ""; // Clear the table body
+
+            if (products.length === 0) {
+                productList.innerHTML = `<tr><td colspan="8" class="text-center">No products added yet.</td></tr>`;
+                return;
+            }
+
+            products.forEach((product, index) => {
+                const row = `<tr>
+                    <td>${product.description}</td>
+                    <td>${product.batchNumber}</td>
+                    <td>${product.dateOfPurchase}</td>
+                    <td>${product.pricePerUnit.toFixed(2)}</td>
+                    <td>${product.unitsPurchased}</td>
+                    <td>${product.gst.toFixed(2)}</td>
+                    <td>${product.totalIncludingGST.toFixed(2)}</td>
+                    <td><button class="btn btn-danger" onclick="removeProduct(${index})">Remove</button></td>
+                </tr>`;
+                productList.innerHTML += row;
+            });
+        }
+
+        function updateTotalAmount() {
+            const totalAmount = products.reduce((sum, product) => sum + product.totalIncludingGST, 0);
+            document.getElementById("total_amount").innerText = totalAmount.toFixed(2); // Display total amount
+        }
+
+        function removeProduct(index) {
+            products.splice(index, 1);
+            updateProductTable();
+            updateTotalAmount(); // Update total after removing a product
+        }
+
+        function clearProductFields() {
+            document.getElementById("description").value = "Sand";
+            document.getElementById("batch_number").value = "0";
+            document.getElementById("date_of_purchase").value = "{{ today|date:'Y-m-d' }}"; // Set it to today's date
+            document.getElementById("price_per_unit").value = "0.00";
+            document.getElementById("units_purchased").value = "1";
+            document.getElementById("gst").value = "5";
+        }
+
+        document.getElementById("billingForm").onsubmit = function(event) {
+            event.preventDefault();
+
+            if (products.length === 0) {
+                alert("Please add at least one product.");
+                return;
+            }
+
+            const productsData = JSON.stringify(products);
+            const formData = new FormData(this);
+            formData.append('products_data', productsData);
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url; // Redirect to the generated bill page
+                } else {
+                    alert("An error occurred while generating the bill: " + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+            });
+        };
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
