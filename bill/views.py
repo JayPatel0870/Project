@@ -4,7 +4,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 import json
 from django.http import JsonResponse
 import logging
-from .forms import BillForm
 from decimal import Decimal
 
 logger = logging.getLogger(__name__)
@@ -249,22 +248,34 @@ def update_bill(request, bill_id):
         bill.date_of_bill = request.POST['date_of_bill']
         bill.save()
 
+        # Initialize net total
+        net_total = Decimal(0)
+
         # Update the items based on the posted data
         for item in items:
+            # Update item description and batch number
             item.description = request.POST.get(f'description_{item.id}', item.description)
+            item.batch_number = request.POST.get(f'batch_number_{item.id}', item.batch_number)
 
-            # Ensure to convert price to Decimal
+            # Get the price and units, ensuring proper conversion
             item.price_per_unit = Decimal(request.POST.get(f'price_{item.id}', item.price_per_unit))
-
-            # Ensure to convert units to int
             try:
                 item.units_purchased = int(request.POST.get(f'units_{item.id}', item.units_purchased))
             except ValueError:
                 item.units_purchased = item.units_purchased  # Keep the old value if error occurs
 
-            # Calculate the total including GST
+            # Calculate total including GST
             item.total_including_gst = item.price_per_unit * Decimal(item.units_purchased)
+
+            # Save the item with updated values
             item.save()
+
+            # Update the net total
+            net_total += item.total_including_gst
+
+        # Update the net total for the bill
+        bill.net_total = net_total
+        bill.save()
 
         return redirect('bill')  # Redirect to the bill list after saving
 

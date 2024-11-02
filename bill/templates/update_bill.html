@@ -34,18 +34,13 @@
     </nav>
 
     <div class="container mt-5">
-        <h2 class="text-center mb-4">Update Bill</h2>
+        <h2 class="text-center mb-4">Update Bill - {{ bill.bill_number }}</h2>
 
-        <form method="POST">
+        <form method="post">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="bill_number" class="form-label">Bill Number</label>
-                <input type="text" class="form-control" id="bill_number" name="bill_number" value="{{ bill.bill_number }}" readonly>
-            </div>
-
-            <div class="mb-3">
                 <label for="customer" class="form-label">Customer Name</label>
-                <select class="form-select" id="customer" name="customer" required>
+                <select id="customer" name="customer" class="form-select" required>
                     {% for customer in customers %}
                         <option value="{{ customer.id }}" {% if customer.id == bill.customer.id %}selected{% endif %}>{{ customer.name }}</option>
                     {% endfor %}
@@ -54,22 +49,37 @@
 
             <div class="mb-3">
                 <label for="date_of_bill" class="form-label">Date of Bill</label>
-                <input type="date" class="form-control" id="date_of_bill" name="date_of_bill" value="{{ bill.date_of_bill|date:'Y-m-d' }}" required>
+                <input type="date" id="date_of_bill" name="date_of_bill" class="form-control" value="{{ bill.date_of_bill|date:'Y-m-d' }}" required>
             </div>
 
-            <h5 class="mt-4">Items</h5>
-            {% for item in items %}
-            <div class="item-entry mb-3">
-                <label for="description_{{ item.id }}" class="form-label">Description</label>
-                <input type="text" class="form-control" id="description_{{ item.id }}" name="description_{{ item.id }}" value="{{ item.description }}">
-                <label for="price_{{ item.id }}" class="form-label">Price per Unit</label>
-                <input type="number" step="1" class="form-control" id="price_{{ item.id }}" name="price_{{ item.id }}" value="{{ item.price_per_unit }}">
-                <label for="units_{{ item.id }}" class="form-label">Units Purchased</label>
-                <input type="number" class="form-control" id="units_{{ item.id }}" name="units_{{ item.id }}" value="{{ item.units_purchased }}">
-            </div>
-            {% endfor %}
+            <h4 class="mt-4">Items</h4>
+            <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Description</th>
+                        <th>Batch Number</th>
+                        <th>Date of Purchase</th>
+                        <th>Price Per Unit</th>
+                        <th>Units Purchased</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td><input type="text" name="description_{{ item.id }}" value="{{ item.description }}" class="form-control" required></td>
+                        <td><input type="text" name="batch_number_{{ item.id }}" value="{{ item.batch_number }}" class="form-control" required></td>
+                        <td><input type="date" name="date_of_purchase_{{ item.id }}" value="{{ item.date_of_purchase|date:'Y-m-d' }}" class="form-control" required></td>
+                        <td><input type="number" name="price_{{ item.id }}" value="{{ item.price_per_unit }}" class="form-control" required step="0.01"></td>
+                        <td><input type="number" name="units_{{ item.id }}" value="{{ item.units_purchased }}" class="form-control" required step="1"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
-            <button type="submit" class="btn btn-primary">Update</button>
+            <div class="text-center">
+                <button type="submit" class="btn btn-success mt-4">Update Bill</button>
+                <a href="{% url 'bill' %}" class="btn btn-secondary mt-4">Cancel</a>
+            </div>
         </form>
     </div>
 
