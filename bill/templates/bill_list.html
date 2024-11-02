@@ -58,7 +58,8 @@
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                         </form>
-                        <a href="{% url 'update_bill' bill.id %}" class="btn btn-warning btn-sm">Update</a>
+                        <a href="{% url 'update_bill' bill.id %}" class="btn btn-primary btn-sm">Update</a>
+
                     </td>
                 </tr>
                 {% empty %}
@@ -70,7 +71,7 @@
         </table>
 
         <div class="text-center">
-            <a href="{% url 'bill' %}" class="btn btn-primary">Back to Billing</a>
+            <a href="{% url 'bill' %}" class="btn btn-success">Back to Billing</a>
         </div>
     </div>
 
