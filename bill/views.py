@@ -5,6 +5,14 @@ import json
 from django.http import JsonResponse
 import logging
 from decimal import Decimal
+from django.http import FileResponse, HttpResponse
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+import io
+
+from .models import Company, Customer, Bill, Item  # Import your models
 
 logger = logging.getLogger(__name__)
 
@@ -123,16 +131,6 @@ def delete_bill_view(request, bill_id):
     bill = get_object_or_404(Bill, id=bill_id)
     bill.delete()  # Delete the bill
     return redirect('bill_list')  # Redirect to the bill list after deletion
-
-
-from django.http import FileResponse, HttpResponse
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-import io
-
-from .models import Company, Customer, Bill, Item  # Import your models
 
 
 def generate_pdf(request):
