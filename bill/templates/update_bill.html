@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Bill</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Billing Application</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'bill' %}">Billing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'add_customer' %}">Add Customer</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'my_company' %}">My Company</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Update Bill</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="bill_number" class="form-label">Bill Number</label>
+                <input type="text" class="form-control" id="bill_number" name="bill_number" value="{{ bill.bill_number }}" readonly>
+            </div>
+
+            <div class="mb-3">
+                <label for="customer" class="form-label">Customer Name</label>
+                <select class="form-select" id="customer" name="customer" required>
+                    {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if customer.id == bill.customer.id %}selected{% endif %}>{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="date_of_bill" class="form-label">Date of Bill</label>
+                <input type="date" class="form-control" id="date_of_bill" name="date_of_bill" value="{{ bill.date_of_bill|date:'Y-m-d' }}" required>
+            </div>
+
+            <h5 class="mt-4">Items</h5>
+            {% for item in items %}
+            <div class="item-entry mb-3">
+                <label for="description_{{ item.id }}" class="form-label">Description</label>
+                <input type="text" class="form-control" id="description_{{ item.id }}" name="description_{{ item.id }}" value="{{ item.description }}">
+                <label for="price_{{ item.id }}" class="form-label">Price per Unit</label>
+                <input type="number" step="1" class="form-control" id="price_{{ item.id }}" name="price_{{ item.id }}" value="{{ item.price_per_unit }}">
+                <label for="units_{{ item.id }}" class="form-label">Units Purchased</label>
+                <input type="number" class="form-control" id="units_{{ item.id }}" name="units_{{ item.id }}" value="{{ item.units_purchased }}">
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary">Update</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

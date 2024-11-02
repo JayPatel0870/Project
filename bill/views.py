@@ -1,17 +1,11 @@
 from django.urls import reverse
 from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Max
-from .models import Company, Customer, Bill, Item
 import json
 from django.http import JsonResponse
 import logging
-from django.http import FileResponse, HttpResponse
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-import io
+from .forms import BillForm
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -243,3 +237,39 @@ def generate_pdf(request):
     # Return PDF as a response
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=pdf_filename)
+
+
+def update_bill(request, bill_id):
+    bill = get_object_or_404(Bill, id=bill_id)
+    items = Item.objects.filter(bill=bill)  # Get all items associated with this bill
+    customers = Customer.objects.all()  # Get all customers for dropdown
+
+    if request.method == 'POST':
+        bill.customer_id = request.POST['customer']
+        bill.date_of_bill = request.POST['date_of_bill']
+        bill.save()
+
+        # Update the items based on the posted data
+        for item in items:
+            item.description = request.POST.get(f'description_{item.id}', item.description)
+
+            # Ensure to convert price to Decimal
+            item.price_per_unit = Decimal(request.POST.get(f'price_{item.id}', item.price_per_unit))
+
+            # Ensure to convert units to int
+            try:
+                item.units_purchased = int(request.POST.get(f'units_{item.id}', item.units_purchased))
+            except ValueError:
+                item.units_purchased = item.units_purchased  # Keep the old value if error occurs
+
+            # Calculate the total including GST
+            item.total_including_gst = item.price_per_unit * Decimal(item.units_purchased)
+            item.save()
+
+        return redirect('bill')  # Redirect to the bill list after saving
+
+    return render(request, 'update_bill.html', {
+        'bill': bill,
+        'items': items,
+        'customers': customers,
+    })

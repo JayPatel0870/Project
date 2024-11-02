@@ -82,7 +82,7 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="units_purchased" class="form-label">Units Purchased</label>
-                    <input type="number" class="form-control" id="units_purchased" name="units_purchased" value="1" required>
+                    <input type="number" class="form-control" id="units_purchased" name="units_purchased" value="0.00" required>
                 </div>
                 <div class="col-md-4 mb-3">
                     <label for="gst" class="form-label">GST (%)</label>
@@ -174,7 +174,7 @@
                     <td>${product.batchNumber}</td>
                     <td>${product.dateOfPurchase}</td>
                     <td>${product.pricePerUnit.toFixed(2)}</td>
-                    <td>${product.unitsPurchased}</td>
+                    <td>${product.unitsPurchased.toFixed(2)}</td>
                     <td>${product.gst.toFixed(2)}</td>
                     <td>${product.totalIncludingGST.toFixed(2)}</td>
                     <td><button class="btn btn-danger" onclick="removeProduct(${index})">Remove</button></td>

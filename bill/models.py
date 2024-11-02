@@ -32,7 +32,7 @@ class Item(models.Model):
     description = models.TextField()  # Description of the item
     batch_number = models.CharField(max_length=50, blank=True)  # Batch number of the item
     price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)  # Price per unit of the item
-    units_purchased = models.IntegerField()  # Number of units purchased
+    units_purchased = models.DecimalField(max_digits=10, decimal_places=2)  # Number of units purchased
     date_of_purchase = models.DateField()  # Date of purchase for the item
     gst = models.DecimalField(max_digits=5, decimal_places=2)  # GST applicable
     total_including_gst = models.DecimalField(max_digits=10, decimal_places=2)  # Total amount including GST
