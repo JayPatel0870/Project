@@ -133,26 +133,26 @@ def delete_bill_view(request, bill_id):
     return redirect('bill_list')  # Redirect to the bill list after deletion
 
 
-def generate_pdf(request):
-    # Fetch the latest data from the database
-    company = Company.objects.last()  # Assuming you want the latest company details
-    customer = Customer.objects.last()  # Assuming you want the latest customer details
-    latest_bill = Bill.objects.last()  # Retrieve the latest bill
-    added_products = Item.objects.filter(bill=latest_bill)  # Get items related to the latest bill
-    grand_total = sum(item.total_including_gst for item in added_products)  # Calculate the grand total
+def generate_pdf(request, bill_number=None):
+    # Fetch the specific bill or the latest bill
+    if bill_number:
+        bill = get_object_or_404(Bill, bill_number=bill_number)
+    else:
+        bill = Bill.objects.last()
 
-    # Check if data is present
-    if not company or not customer or not latest_bill or not added_products:
+    company = get_object_or_404(Company)
+    customer = get_object_or_404(Customer, name=bill.customer_name)
+    added_products = Item.objects.filter(bill=bill)
+
+    if not company or not customer or not bill or not added_products:
         return HttpResponse("Required data is missing to generate the PDF.", status=400)
 
     # Create a buffer for the PDF
     buffer = io.BytesIO()
-    # Set the PDF filename to "<customer_name>_<bill_number>.pdf"
-    pdf_filename = f"{customer.name}_{latest_bill.bill_number}.pdf"
+    pdf_filename = f"{customer.name}_{bill.bill_number}.pdf"
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
 
-    # Define styles
     styles = getSampleStyleSheet()
     title_style = styles['Heading1']
     title_style.alignment = 1
@@ -186,18 +186,17 @@ def generate_pdf(request):
     elements.append(Spacer(1, 12))
 
     # Bill Details
-    elements.append(Paragraph(f"Date of Bill: {latest_bill.date_of_bill.strftime('%Y-%m-%d')}", styles['Normal']))
-    elements.append(Paragraph(f"Bill Number: {latest_bill.bill_number}", styles['Normal']))
+    elements.append(Paragraph(f"Date of Bill: {bill.date_of_bill.strftime('%Y-%m-%d')}", styles['Normal']))
+    elements.append(Paragraph(f"Bill Number: {bill.bill_number}", styles['Normal']))
     elements.append(Spacer(1, 12))
 
-    # Add table heading for clarity
+    # Product Details Table
     elements.append(Paragraph("Product Details", styles['Heading2']))
     elements.append(Spacer(1, 12))
 
-    # Products Table
     product_data = [
-        ["Description", "Royalty Number", "Date", "Price", "Units", "GST (%)",
-         "Total (Including GST)"]]
+        ["Description", "Royalty Number", "Date", "Price", "Units", "GST (%)", "Total (Including GST)"]
+    ]
     for product in added_products:
         product_data.append([
             product.description,
@@ -209,24 +208,21 @@ def generate_pdf(request):
             product.total_including_gst
         ])
 
-    # Set up the table with padding and center alignment
     product_table = Table(product_data, colWidths=[90, 90, 90, 70, 70, 50, 100])
     product_table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 10),  # Add left padding
-        ('RIGHTPADDING', (0, 0), (-1, -1), 10),  # Add right padding
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
     ]))
 
-    # Add some space and then add the table
-    elements.append(Spacer(1, 12))
     elements.append(product_table)
     elements.append(Spacer(1, 12))
 
     # Grand Total
-    elements.append(Paragraph(f"Grand Total: {grand_total}", styles['Heading2']))
+    elements.append(Paragraph(f"Grand Total: {bill.net_total}", styles['Heading2']))
 
     # Build PDF
     doc.build(elements)
@@ -234,7 +230,6 @@ def generate_pdf(request):
     # Return PDF as a response
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename=pdf_filename)
-
 
 def update_bill(request, bill_id):
     bill = get_object_or_404(Bill, id=bill_id)
